@@ -1,0 +1,80 @@
+# RQ2: handover prediction vs a per-speed tuned A3 rule.
+# Every modelling choice below is stated in the report's "Simulation model" section.
+
+deployment:
+  n_cells: 7                 # central site + first ring, hexagonal
+  isd_m: 500                 # TR 38.901 UMa inter-site distance
+  h_bs_m: 25
+  h_ut_m: 1.5
+  fc_ghz: 3.5
+  tx_power_dbm: 46           # total gNB power
+  bandwidth_mhz: 20
+  scs_khz: 30                # -> 51 PRB -> 612 resource elements
+  n_rb: 51
+  noise_figure_db: 9
+  antenna_gain_dbi: 0        # omnidirectional cells (no sectorisation) -- stated simplification
+  area_radius_m: 450         # UEs stay within this radius of the centre (reflecting boundary)
+
+channel:
+  shadowing: true            # log-normal, sigma 4 dB LOS / 6 dB NLOS (TR 38.901 Table 7.4.1-1)
+  sf_decorr_m: {los: 37, nlos: 50}   # Table 7.5-6, UMa
+  los_decorr_m: 50           # spatially consistent LOS state, TR 38.901 7.6.3.3 (procedure A)
+  soft_los_eps: 0.1          # soft LOS transition width (~5 m); 0 = hard switch (35+ dB jumps per sample)
+  meas_noise_db: 1.0         # i.i.d. L1 measurement error on each RSRP sample
+  fast_fading: false         # L1 averaging over REs and time is assumed to remove it
+
+mobility:
+  speeds_kmh: [3, 30, 60, 120]
+  model: straight_reflect    # straight lines, random heading, reflected at the area boundary;
+                             # heading change every turn_every_s with turn_sigma_deg
+  turn_every_s: 10
+  turn_sigma_deg: 30
+  sample_ms: 40
+  duration_s: 120            # per trajectory
+  n_traj: {train: 160, val: 40, test: 60}   # per speed
+
+measurement:
+  l3_k: 4                    # TS 38.331 filterCoefficient
+  l3_ref_period_ms: 200      # the filter is specified for 200 ms sampling; a is rescaled for 40 ms
+
+failures:
+  q_out_db: -8
+  q_in_db: -6
+  qout_eval_ms: 200          # SINR averaged over this window before comparison
+  t310_s: 1.0
+  reestablish_s: 0.5         # outage after an RLF before re-attaching to the strongest cell
+  ho_interruption_ms: 50
+  ping_pong_s: 1.0
+
+a3:
+  offset_db: 0.0
+  hysteresis_db: [0, 1, 2, 3, 4, 5, 6, 7, 8, 10]   # extended: at 120 km/h the optimum sat on 6 dB, the old edge
+  ttt_ms: [40, 160, 320, 640]
+
+objective:
+  # One tuning objective for BOTH policies, chosen on validation trajectories, per speed.
+  # J = w_rlf * RLF/UE/min + w_pp * ping-pong/UE/min + w_ho * HO/UE/min
+  w_rlf: 1.0
+  w_pp: 0.5
+  w_ho: 0.05
+
+label:
+  horizon_ms: 500            # H
+  margin_db: 3.0             # X: neighbour above serving by at least this ...
+  sustain_ms: 200            # ... for at least this long, on the noise-free large-scale RSRP
+lstm:
+  history_ms: 1000           # 25 samples
+  n_neigh: 3
+  hidden: 64
+  layers: 1
+  epochs: 25
+  batch_size: 512
+  lr: 2.0e-3
+  patience: 5
+  dagger_iters: 1            # extra rollouts under the learned policy, relabelled and added
+  tau_grid: [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+  min_stay_ms: [0, 200, 500, 1000]
+
+seeds: [0, 1, 2]
+trace_source: python         # python | ns3  (ns3 reads CSVs written by infra/ns3/nr-rsrp-traces.cc)
+ns3_trace_dir: handover/traces/ns3

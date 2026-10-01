@@ -1,0 +1,61 @@
+# Feature pipeline, models and evaluation protocol for RQ1 / RQ1b.
+windowing:
+  testbed:            # 5G testbed sources (5 s grid)
+    step_s: 5
+    window: 12        # samples -> 60 s
+    stride: 1         # samples -> 5 s
+    ffill_max_s: 15   # forward-fill gaps up to this length; longer gaps stay missing
+  bgp:                # BGP per-minute features
+    step_s: 60
+    window: 10        # 10 min
+    stride: 1
+    ffill_max_s: 0
+
+labels:
+  anomalous_overlap: 0.5     # >= 50 % of the window inside an effect window -> anomalous
+  grace_s: 60                # effect window = [t_applied, t_removed + grace]
+
+split:
+  fractions: [0.6, 0.2, 0.2] # train / validation / test, by time, per run
+  purge_s: 60                # windows straddling a split boundary are dropped
+
+columns:
+  # Regexes over "entity.metric" column names, removed before anything else. The headline result
+  # keeps everything; the ablation `no_link_state` drops the SDN state indicators, which otherwise
+  # make link_down almost trivially detectable:
+  #   tb windows ... --exclude 'link_forwarding$' 'link_up$' 'tree_change_rate$'
+  exclude: []
+
+missing:
+  # Columns missing in more than this share of training samples are dropped (and reported).
+  max_missing_ratio: 0.2
+  # Remaining NaNs (after ffill) are replaced by the training median of that column, and a
+  # per-window "missing fraction" feature is added so outages stay visible to the models.
+  add_missing_feature: true
+
+models:
+  zscore:
+    threshold: 3.0
+  iforest:
+    n_estimators: 300
+    max_samples: 256
+    threshold_rule: val_f1        # val_f1 | fa_budget
+    fa_budget_per_h: 1.0          # used when threshold_rule = fa_budget
+  lstm_ae:
+    hidden: 64
+    latent: 16
+    layers: 1
+    epochs: 40
+    batch_size: 128
+    lr: 1.0e-3
+    patience: 6                   # early stopping on validation reconstruction loss (normal windows only)
+    threshold_quantile: 0.99
+  rf:
+    n_estimators: 300
+    min_samples_leaf: 2
+    class_weight: balanced
+
+evaluation:
+  seeds: [0, 1, 2, 3, 4]
+  alarm_merge_s: 30               # alarms closer than this form one alarm event
+  explain_top_k: 3

@@ -1,0 +1,164 @@
+# Canonical metric mapping: PromQL expression -> (entity, metric).
+#
+# Every expression must return exactly ONE series (aggregate with sum/max/... ).
+# `{entity}` in `promql` is replaced by each value of `entities`.
+# Rates are computed here, in PromQL, never in pandas: `rate(x[30s])` with a 5 s scrape
+# interval always has >= 6 samples, so a single missed scrape does not create a gap.
+#
+# `verify: true` marks metric names taken from Open5GS documentation that you must confirm
+# against your running version with:
+#   kubectl -n 5g exec deploy/amf -- curl -s localhost:9090/metrics | grep -v '^#'
+# The exporter logs a warning (and writes a NaN column) for any expression that returns no data,
+# so a renamed metric never silently disappears from the dataset.
+
+namespace: 5g
+step_s: 5
+
+groups:
+  # ---------------------------------------------------------------- resources (kubelet / cAdvisor)
+  - metric: cpu_seconds_rate
+    unit: cores
+    entities: [amf, smf, upf, nrf, ausf, udm, udr, pcf, nssf, bsf, mongodb, gnb, ue]
+    promql: 'sum(rate(container_cpu_usage_seconds_total{namespace="5g",pod=~"{entity}-.*",container!="",container!="POD"}[30s]))'
+  - metric: mem_working_set_bytes
+    unit: bytes
+    entities: [amf, smf, upf, nrf, ausf, udm, udr, pcf, nssf, bsf, mongodb, gnb, ue]
+    promql: 'sum(container_memory_working_set_bytes{namespace="5g",pod=~"{entity}-.*",container!="",container!="POD"})'
+  - metric: cpu_throttled_ratio
+    unit: ratio
+    entities: [upf, gnb, ue]
+    promql: 'sum(rate(container_cpu_cfs_throttled_periods_total{namespace="5g",pod=~"{entity}-.*",container!=""}[30s])) / clamp_min(sum(rate(container_cpu_cfs_periods_total{namespace="5g",pod=~"{entity}-.*",container!=""}[30s])), 1e-9)'
+  - metric: restarts
+    unit: count
+    entities: [amf, smf, upf]
+    promql: 'sum(kube_pod_container_status_restarts_total{namespace="5g",pod=~"{entity}-.*"})'
+
+  # ---------------------------------------------------------------- pod network interfaces
+  # eth0 = cluster network (N2, SBI, N4); n3 = Multus interface on the SDN ring.
+  - metric: n3_rx_bytes_rate
+    unit: B/s
+    entities: [upf, gnb]
+    promql: 'sum(rate(container_network_receive_bytes_total{namespace="5g",pod=~"{entity}-.*",interface="n3"}[30s]))'
+  - metric: n3_tx_bytes_rate
+    unit: B/s
+    entities: [upf, gnb]
+    promql: 'sum(rate(container_network_transmit_bytes_total{namespace="5g",pod=~"{entity}-.*",interface="n3"}[30s]))'
+  - metric: eth0_rx_bytes_rate
+    unit: B/s
+    entities: [amf, smf, upf, gnb]
+    promql: 'sum(rate(container_network_receive_bytes_total{namespace="5g",pod=~"{entity}-.*",interface="eth0"}[30s]))'
+  - metric: eth0_tx_bytes_rate
+    unit: B/s
+    entities: [amf, smf, upf, gnb]
+    promql: 'sum(rate(container_network_transmit_bytes_total{namespace="5g",pod=~"{entity}-.*",interface="eth0"}[30s]))'
+
+  # ---------------------------------------------------------------- Open5GS application metrics
+  - metric: ran_ue
+    unit: count
+    entities: [amf]
+    verify: true
+    promql: 'sum(ran_ue{namespace="5g"})'
+  - metric: gnb_connected
+    unit: count
+    entities: [amf]
+    verify: true
+    promql: 'sum(gnb{namespace="5g"})'
+  - metric: reg_init_req_rate
+    unit: 1/s
+    entities: [amf]
+    verify: true
+    promql: 'sum(rate(fivegs_amffunction_rm_reginitreq{namespace="5g"}[30s]))'
+  - metric: reg_init_succ_rate
+    unit: 1/s
+    entities: [amf]
+    verify: true
+    promql: 'sum(rate(fivegs_amffunction_rm_reginitsucc{namespace="5g"}[30s]))'
+  # SMF / UPF names below were CONFIRMED on Open5GS v2.7.7 by infra/open5gs/local_check.py
+  # (see infra/open5gs/validated_metrics.txt). Note: fivegs_smffunction_sm_sessionnbr, listed in
+  # some docs, does NOT exist in v2.7.7 -- the SMF exposes pfcp_sessions_active / ues_active.
+  - metric: pfcp_sessions
+    unit: count
+    entities: [smf]
+    promql: 'sum(pfcp_sessions_active{namespace="5g",pod=~"smf-.*"})'
+  - metric: ues_active
+    unit: count
+    entities: [smf]
+    promql: 'sum(ues_active{namespace="5g",pod=~"smf-.*"})'
+  - metric: pfcp_peers
+    unit: count
+    entities: [smf]
+    promql: 'sum(pfcp_peers_active{namespace="5g",pod=~"smf-.*"})'
+  - metric: n3_gtp_in_pkt_rate
+    unit: pkt/s
+    entities: [upf]
+    promql: 'sum(rate(fivegs_ep_n3_gtp_indatapktn3upf{namespace="5g"}[30s]))'
+  - metric: n3_gtp_out_pkt_rate
+    unit: pkt/s
+    entities: [upf]
+    promql: 'sum(rate(fivegs_ep_n3_gtp_outdatapktn3upf{namespace="5g"}[30s]))'
+  - metric: upf_sessions
+    unit: count
+    entities: [upf]
+    promql: 'sum(fivegs_upffunction_upf_sessionnbr{namespace="5g"})'
+
+  # ---------------------------------------------------------------- UE-side probe sidecar (port 9200)
+  - metric: rtt_ms
+    unit: ms
+    entities: [ue1]
+    promql: 'max(probe_rtt_ms{ue="{entity}"})'
+  - metric: loss_ratio
+    unit: ratio
+    entities: [ue1]
+    promql: 'max(probe_loss_ratio{ue="{entity}"})'
+  - metric: dl_bytes_rate
+    unit: B/s
+    entities: [ue1]
+    promql: 'sum(rate(probe_tun_rx_bytes_total{ue="{entity}"}[30s]))'
+  - metric: ul_bytes_rate
+    unit: B/s
+    entities: [ue1]
+    promql: 'sum(rate(probe_tun_tx_bytes_total{ue="{entity}"}[30s]))'
+  - metric: registered
+    unit: bool
+    entities: [ue1]
+    promql: 'max(probe_registered{ue="{entity}"})'
+
+  # ---------------------------------------------------------------- SDN transport (Ryu exporter, port 9300)
+  # Ring: s1 - s2 - s3 - s4 - s1. Entities are the four inter-switch links, measured at each link's
+  # clockwise end (port numbers fixed by infra/sdn/mininet_service.py).
+  # link_forwarding / link_up / tree_changes are STATE indicators: they make link_down nearly
+  # trivial to detect. Report results with and without them (configs/detection.yaml ablations).
+  - metric: link_tx_bytes_rate
+    unit: B/s
+    entities: [s1-s2, s2-s3, s3-s4, s4-s1]
+    promql: 'sum(rate(ryu_port_tx_bytes_total{link="{entity}"}[30s]))'
+  - metric: link_rx_bytes_rate
+    unit: B/s
+    entities: [s1-s2, s2-s3, s3-s4, s4-s1]
+    promql: 'sum(rate(ryu_port_rx_bytes_total{link="{entity}"}[30s]))'
+  - metric: link_drop_rate
+    unit: pkt/s
+    entities: [s1-s2, s2-s3, s3-s4, s4-s1]
+    promql: 'sum(rate(ryu_port_tx_dropped_total{link="{entity}"}[30s]))'
+  - metric: link_forwarding
+    unit: bool
+    entities: [s1-s2, s2-s3, s3-s4, s4-s1]
+    promql: 'max(ryu_link_forwarding{link="{entity}"})'
+  - metric: link_up
+    unit: bool
+    entities: [s1-s2, s2-s3, s3-s4, s4-s1]
+    promql: 'max(ryu_link_up{link="{entity}"})'
+  - metric: tree_change_rate
+    unit: 1/s
+    entities: [sdn]
+    promql: 'sum(rate(ryu_tree_changes_total[30s]))'
+
+  # ---------------------------------------------------------------- host (node-exporter)
+  - metric: cpu_busy_ratio
+    unit: ratio
+    entities: [host]
+    promql: '1 - avg(rate(node_cpu_seconds_total{mode="idle"}[30s]))'
+  - metric: load1
+    unit: count
+    entities: [host]
+    promql: 'max(node_load1)'

@@ -1,0 +1,28 @@
+# RQ1b: the same detectors on public BGP update data.
+#
+# Event intervals below are the commonly used onset dates. The exact anomalous intervals
+# differ between papers: before reporting any number, copy the intervals used by the paper
+# you compare against (e.g. Al-Rousan & Trajkovic, HPSR 2012) into `anomalous` and set
+# `verified: true`. The pipeline refuses to evaluate an event with verified: false unless
+# --allow-unverified is passed (smoke tests only).
+collectors:
+  ripe_ris: ["rrc04"]      # RIPE RIS collector names
+  routeviews: []           # e.g. ["route-views2"]
+peer_filter: null          # optional peer AS to keep, to avoid mixing peers with different views
+
+events:
+  - name: slammer
+    days: ["2003-01-23", "2003-01-24", "2003-01-25", "2003-01-26", "2003-01-27"]
+    anomalous: [["2003-01-25T05:30:00Z", "2003-01-25T21:30:00Z"]]
+    verified: false
+  - name: nimda
+    days: ["2001-09-15", "2001-09-16", "2001-09-17", "2001-09-18", "2001-09-19", "2001-09-20"]
+    anomalous: [["2001-09-18T13:00:00Z", "2001-09-20T00:00:00Z"]]
+    verified: false
+  - name: code_red_i
+    days: ["2001-07-17", "2001-07-18", "2001-07-19", "2001-07-20", "2001-07-21"]
+    anomalous: [["2001-07-19T13:20:00Z", "2001-07-20T00:00:00Z"]]
+    verified: false
+
+# Train on one event, test on the others (leave-one-event-out) AND within-event time split.
+protocol: leave_one_event_out

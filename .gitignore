@@ -1,0 +1,27 @@
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.venv/
+# Run data is large and regenerable from manifests; the manifests themselves are committed under configs/runs
+runs/*
+!runs/.gitkeep
+/data/
+*.parquet
+*.npy
+*.pt
+# Smoke results come from the synthetic stand-in and must never be mixed with real results
+results/smoke/
+report/*.aux
+report/*.log
+report/*.out
+report/*.pdf
+infra/sdn/*.sock
+handover/traces/
+bgp_data/
+infra/sdn/*_check.log
+build/
+results/*/traces/
+results/*/traces_ns3/
+results/smoke_ho/
+results/*.log
+infra/oai/generated/
