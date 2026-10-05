@@ -1,0 +1,29 @@
+{
+  "imsi": "001010123456780",
+  "msisdn": [],
+  "imeisv": "353490069873319",
+  "mme_host": [], "mme_realm": [], "purge_flag": [],
+  "security": {
+    "k": "00112233445566778899aabbccddeeff",
+    "op": null,
+    "opc": "63BFA50EE6523365FF14C1F45F88737D",
+    "amf": "8000",
+    "sqn": 1
+  },
+  "ambr": {"downlink": {"value": 1, "unit": 3}, "uplink": {"value": 1, "unit": 3}},
+  "slice": [{
+    "sst": 1,
+    "default_indicator": true,
+    "session": [{
+      "name": "internet",
+      "type": 1,
+      "ambr": {"downlink": {"value": 1, "unit": 3}, "uplink": {"value": 1, "unit": 3}},
+      "qos": {"index": 9, "arp": {"priority_level": 8, "pre_emption_capability": 1, "pre_emption_vulnerability": 1}}
+    }]
+  }],
+  "access_restriction_data": 32,
+  "subscriber_status": 0,
+  "network_access_mode": 0,
+  "subscribed_rau_tau_timer": 12,
+  "__v": 0
+}

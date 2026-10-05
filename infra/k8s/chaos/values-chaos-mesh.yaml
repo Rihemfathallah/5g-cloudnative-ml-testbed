@@ -1,0 +1,6 @@
+# Chaos Mesh on k3s: k3s ships its own containerd with a non-default socket path.
+chaosDaemon:
+  runtime: containerd
+  socketPath: /run/k3s/containerd/containerd.sock
+dashboard: {create: false}
+controllerManager: {enableFilterNamespace: false}

@@ -1,0 +1,48 @@
+# Subscriber database (UDR, PCF). emptyDir on purpose: the subscriber is re-provisioned by the
+# Job on every bring-up, so no state survives between experiment days.
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: mongodb, namespace: 5g, labels: {app: mongodb}}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: mongodb}}
+  strategy: {type: Recreate}
+  template:
+    metadata: {labels: {app: mongodb}}
+    spec:
+      containers:
+        - name: mongodb
+          image: mongo:6.0          # pinned in infra/VERSIONS.md
+          args: ["--bind_ip_all", "--wiredTigerCacheSizeGB", "0.25"]
+          ports: [{name: mongo, containerPort: 27017}]
+          readinessProbe:
+            exec: {command: ["mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]}
+            periodSeconds: 5
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {memory: 768Mi}
+          volumeMounts: [{name: data, mountPath: /data/db}]
+      volumes: [{name: data, emptyDir: {}}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: mongodb, namespace: 5g, labels: {app: mongodb}}
+spec:
+  selector: {app: mongodb}
+  ports: [{name: mongo, port: 27017, targetPort: 27017}]
+---
+apiVersion: batch/v1
+kind: Job
+metadata: {name: provision-subscribers, namespace: 5g}
+spec:
+  backoffLimit: 10
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: provision
+          image: mongo:6.0
+          env: [{name: N_SUBSCRIBERS, value: "50"}]
+          command: ["mongosh", "mongodb://mongodb.5g.svc.cluster.local/open5gs", "--file", "/provision/provision.js"]
+          volumeMounts: [{name: provision, mountPath: /provision}]
+      volumes: [{name: provision, configMap: {name: open5gs-provision}}]

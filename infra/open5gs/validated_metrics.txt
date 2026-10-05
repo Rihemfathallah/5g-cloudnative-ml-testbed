@@ -1,0 +1,36 @@
+# Metric names exposed by Open5GS NFs, recorded by local_check.py
+# 2026-11-07 01:54:49 CET  binary: /opt/open5gs/bin
+
+[amf]
+
+
+[smf]
+bearers_active
+fivegs_smffunction_sm_n4sessionestabreq
+fivegs_smffunction_sm_n4sessionreport
+fivegs_smffunction_sm_n4sessionreportsucc
+gn_rx_createpdpcontextreq
+gn_rx_deletepdpcontextreq
+gn_rx_parse_failed
+gtp1_pdpctxs_active
+gtp2_sessions_active
+gtp_new_node_failed
+gtp_peers_active
+pfcp_peers_active
+pfcp_sessions_active
+s5c_rx_createsession
+s5c_rx_deletesession
+s5c_rx_parse_failed
+ues_active
+
+[upf]
+fivegs_ep_n3_gtp_indatapktn3upf
+fivegs_ep_n3_gtp_outdatapktn3upf
+fivegs_upffunction_sm_n4sessionestabreq
+fivegs_upffunction_sm_n4sessionreport
+fivegs_upffunction_sm_n4sessionreportsucc
+fivegs_upffunction_upf_sessionnbr
+pfcp_peers_active
+
+[pcf]
+

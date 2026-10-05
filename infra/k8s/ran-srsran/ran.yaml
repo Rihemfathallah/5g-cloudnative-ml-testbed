@@ -1,0 +1,86 @@
+# srsRAN gNB + srsUE (ZeroMQ virtual radio) and the UE probe.
+# CPU: Guaranteed QoS with integer CPUs -> exclusive cores under the static CPU manager, so a
+# StressChaos on the UPF or a monitoring spike cannot starve the real-time ZeroMQ loop.
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: gnb, namespace: 5g, labels: {app: gnb}}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: gnb}}
+  strategy: {type: Recreate}
+  template:
+    metadata:
+      labels: {app: gnb}
+      annotations:
+        k8s.v1.cni.cncf.io/networks: '[{"name": "n3-ran", "interface": "n3"}]'
+    spec:
+      terminationGracePeriodSeconds: 5
+      containers:
+        - name: gnb
+          image: testbed/srsran-gnb:25.10
+          imagePullPolicy: Never
+          env:
+            - {name: POD_IP, valueFrom: {fieldRef: {fieldPath: status.podIP}}}
+            - {name: N3_IP, value: "10.100.3.10"}
+          ports:
+            - {name: zmq-tx, containerPort: 2000, protocol: TCP}
+          securityContext: {privileged: true}      # real-time scheduling, NIC settings
+          resources:
+            requests: {cpu: "2", memory: 2Gi}
+            limits: {cpu: "2", memory: 2Gi}
+          volumeMounts: [{name: cfg, mountPath: /etc/srsran}]
+      volumes: [{name: cfg, configMap: {name: srsran-config}}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: gnb-zmq, namespace: 5g}
+spec:
+  selector: {app: gnb}
+  ports: [{name: zmq-tx, port: 2000, targetPort: 2000, protocol: TCP}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: ue, namespace: 5g, labels: {app: ue}}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: ue}}
+  strategy: {type: Recreate}
+  template:
+    metadata: {labels: {app: ue}}
+    spec:
+      terminationGracePeriodSeconds: 5
+      shareProcessNamespace: true                  # lets the probe see srsue for diagnostics
+      containers:
+        - name: srsue
+          image: testbed/srsue:23.11
+          imagePullPolicy: Never
+          ports: [{name: zmq-tx, containerPort: 2001, protocol: TCP}]
+          securityContext: {privileged: true}      # creates tun_srsue
+          resources:
+            requests: {cpu: "1", memory: 1Gi}
+            limits: {cpu: "1", memory: 1Gi}
+          volumeMounts:
+            - {name: cfg, mountPath: /etc/srsran}
+            - {name: tun, mountPath: /dev/net/tun}
+            - {name: run, mountPath: /run/srsue}
+        - name: probe
+          image: testbed/probe:1.0
+          imagePullPolicy: Never
+          env: [{name: UE_NAME, value: ue1}]
+          ports: [{name: metrics, containerPort: 9200}]
+          resources:
+            requests: {cpu: 250m, memory: 128Mi}
+            limits: {cpu: 250m, memory: 128Mi}
+          volumeMounts: [{name: probe-run, mountPath: /run/probe}]
+      volumes:
+        - {name: cfg, configMap: {name: srsran-config}}
+        - {name: tun, hostPath: {path: /dev/net/tun, type: CharDevice}}
+        - {name: run, emptyDir: {}}
+        - {name: probe-run, emptyDir: {}}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: ue-zmq, namespace: 5g}
+spec:
+  selector: {app: ue}
+  ports: [{name: zmq-tx, port: 2001, targetPort: 2001, protocol: TCP}]

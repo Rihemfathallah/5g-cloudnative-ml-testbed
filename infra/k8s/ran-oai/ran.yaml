@@ -1,0 +1,62 @@
+# OAI gNB + nrUE in RF-simulator mode (optional profile, NOT validated -- see infra/oai/README.md).
+# Same core, same N3 attachment (n3-ran on OVS bridge s1) as the srsRAN profile.
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: gnb, namespace: 5g, labels: {app: gnb}}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: gnb}}
+  strategy: {type: Recreate}
+  template:
+    metadata:
+      labels: {app: gnb}
+      annotations: {k8s.v1.cni.cncf.io/networks: '[{"name": "n3-ran", "interface": "n3"}]'}
+    spec:
+      containers:
+        - name: gnb
+          image: oaisoftwarealliance/oai-gnb:${OAI_TAG}
+          command: ["/bin/sh", "-c"]
+          args:
+            - AMF_IP=$(getent hosts amf.5g.svc.cluster.local | awk '{print $1}');
+              sed -e "s/__AMF_IP__/$AMF_IP/" -e "s/__POD_IP__/$POD_IP/" /cfg/gnb.conf > /tmp/gnb.conf;
+              exec /opt/oai-gnb/bin/nr-softmodem -O /tmp/gnb.conf --sa --rfsim -E
+          env: [{name: POD_IP, valueFrom: {fieldRef: {fieldPath: status.podIP}}}]
+          securityContext: {privileged: true}
+          resources: {requests: {cpu: "2", memory: 2Gi}, limits: {cpu: "2", memory: 2Gi}}
+          volumeMounts: [{name: cfg, mountPath: /cfg}]
+      volumes: [{name: cfg, configMap: {name: oai-config}}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: gnb-rfsim, namespace: 5g}
+spec:
+  selector: {app: gnb}
+  ports: [{name: rfsim, port: 4043, targetPort: 4043}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: ue, namespace: 5g, labels: {app: ue}}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: ue}}
+  template:
+    metadata: {labels: {app: ue}}
+    spec:
+      containers:
+        - name: nrue
+          image: oaisoftwarealliance/oai-nr-ue:${OAI_TAG}
+          command: ["/bin/sh", "-c"]
+          args:
+            - GNB_IP=$(getent hosts gnb-rfsim.5g.svc.cluster.local | awk '{print $1}');
+              exec /opt/oai-nr-ue/bin/nr-uesoftmodem -r 106 --numerology 1 --band 78 -C 3619200000
+              --sa --rfsim --rfsimulator.serveraddr $GNB_IP
+              --uicc0.imsi 001010123456780 --uicc0.key 00112233445566778899aabbccddeeff
+              --uicc0.opc 63BFA50EE6523365FF14C1F45F88737D --uicc0.dnn internet --uicc0.nssai_sst 1
+          securityContext: {privileged: true}
+          resources: {requests: {cpu: "1", memory: 1Gi}, limits: {cpu: "1", memory: 1Gi}}
+        - name: probe
+          image: testbed/probe:1.0
+          imagePullPolicy: Never
+          env: [{name: UE_NAME, value: ue1}, {name: TUN_DEV, value: oaitun_ue1}]
+          ports: [{name: metrics, containerPort: 9200}]
+          resources: {requests: {cpu: 250m, memory: 128Mi}, limits: {cpu: 250m, memory: 128Mi}}

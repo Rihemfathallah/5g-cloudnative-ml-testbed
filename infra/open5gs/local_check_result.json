@@ -1,0 +1,136 @@
+{
+ "sctp_available": false,
+ "open5gs_bin": "/opt/open5gs/bin",
+ "checks": [
+  {
+   "check": "MongoDB up and subscriber provisioned",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "nrf running with rendered config",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "ausf running with rendered config",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "udm running with rendered config",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "udr running with rendered config",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "pcf running with rendered config",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "nssf running with rendered config",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "bsf running with rendered config",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "smf running with rendered config",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "upf running with rendered config",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "amf running with rendered config",
+   "ok": null,
+   "detail": "needs SCTP"
+  },
+  {
+   "check": "NFs registered with NRF",
+   "ok": true,
+   "detail": "(28 registrations in nrf.log)"
+  },
+  {
+   "check": "N4 (PFCP) association SMF<->UPF up",
+   "ok": true,
+   "detail": "(pfcp_peers_active=1)"
+  },
+  {
+   "check": "gNB NG Setup with AMF",
+   "ok": null,
+   "detail": "needs SCTP"
+  },
+  {
+   "check": "UE registered + PDU session",
+   "ok": null,
+   "detail": "needs SCTP"
+  },
+  {
+   "check": "GTP-U packets counted by the UPF",
+   "ok": null,
+   "detail": "needs SCTP"
+  },
+  {
+   "check": "metric `ran_ue` exists (amf.ran_ue)",
+   "ok": null,
+   "detail": "AMF not running without SCTP"
+  },
+  {
+   "check": "metric `gnb` exists (amf.gnb_connected)",
+   "ok": null,
+   "detail": "AMF not running without SCTP"
+  },
+  {
+   "check": "metric `fivegs_amffunction_rm_reginitreq` exists (amf.reg_init_req_rate)",
+   "ok": null,
+   "detail": "AMF not running without SCTP"
+  },
+  {
+   "check": "metric `fivegs_amffunction_rm_reginitsucc` exists (amf.reg_init_succ_rate)",
+   "ok": null,
+   "detail": "AMF not running without SCTP"
+  },
+  {
+   "check": "metric `pfcp_sessions_active` exists (smf.pfcp_sessions)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "metric `ues_active` exists (smf.ues_active)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "metric `pfcp_peers_active` exists (smf.pfcp_peers)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "metric `fivegs_ep_n3_gtp_indatapktn3upf` exists (upf.n3_gtp_in_pkt_rate)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "metric `fivegs_ep_n3_gtp_outdatapktn3upf` exists (upf.n3_gtp_out_pkt_rate)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "check": "metric `fivegs_upffunction_upf_sessionnbr` exists (upf.upf_sessions)",
+   "ok": true,
+   "detail": ""
+  }
+ ]
+}

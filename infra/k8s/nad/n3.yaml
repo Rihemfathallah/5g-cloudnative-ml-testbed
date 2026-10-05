@@ -1,0 +1,20 @@
+# N3 (GTP-U) attachments on the SDN ring (ADR-2). The OVS bridges s1 and s3 are created by the
+# Mininet topology (infra/sdn/mininet_service.py), which must be running BEFORE these pods start.
+#
+#   s1 = RAN site  (gNB)  10.100.3.10/24
+#   s3 = core site (UPF)  10.100.3.20/24      s1 and s3 are opposite corners of the 4-switch ring,
+#                                            so the STP tree routes N3 over s1-s2-s3 and a
+#                                            link failure reroutes it over s1-s4-s3.
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata: {name: n3-ran, namespace: 5g}
+spec:
+  config: '{"cniVersion": "0.4.0", "type": "ovs", "bridge": "s1", "mtu": 1500,
+            "ipam": {"type": "static", "addresses": [{"address": "10.100.3.10/24"}]}}'
+---
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata: {name: n3-core, namespace: 5g}
+spec:
+  config: '{"cniVersion": "0.4.0", "type": "ovs", "bridge": "s3", "mtu": 1500,
+            "ipam": {"type": "static", "addresses": [{"address": "10.100.3.20/24"}]}}'

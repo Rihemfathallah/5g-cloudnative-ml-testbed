@@ -1,0 +1,68 @@
+# UERANSIM gNB + UEs (fallback profile, and the profile for 8 GB machines).
+# Same N3 attachment as srsRAN: GTP-U on 10.100.3.10 (OVS bridge s1). Radio link = UDP 4997.
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: gnb, namespace: 5g, labels: {app: gnb}}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: gnb}}
+  strategy: {type: Recreate}
+  template:
+    metadata:
+      labels: {app: gnb}
+      annotations: {k8s.v1.cni.cncf.io/networks: '[{"name": "n3-ran", "interface": "n3"}]'}
+    spec:
+      containers:
+        - name: gnb
+          image: testbed/ueransim:3.3.0
+          imagePullPolicy: Never
+          command: ["/bin/sh", "-c"]
+          args:
+            - AMF_IP=$(getent hosts amf.5g.svc.cluster.local | awk '{print $1}');
+              sed -e "s/__LINK_IP__/$POD_IP/" -e "s/__NGAP_IP__/$POD_IP/" -e "s/__GTP_IP__/10.100.3.10/"
+                  -e "s/__AMF_IP__/$AMF_IP/" /cfg/gnb.yaml.tmpl > /tmp/gnb.yaml;
+              exec nr-gnb -c /tmp/gnb.yaml
+          env: [{name: POD_IP, valueFrom: {fieldRef: {fieldPath: status.podIP}}}]
+          ports: [{name: rls, containerPort: 4997, protocol: UDP}]
+          resources: {requests: {cpu: "1", memory: 256Mi}, limits: {cpu: "1", memory: 256Mi}}
+          volumeMounts: [{name: cfg, mountPath: /cfg}]
+      volumes: [{name: cfg, configMap: {name: ueransim-config}}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: gnb-rls, namespace: 5g}
+spec:
+  selector: {app: gnb}
+  ports: [{name: rls, port: 4997, targetPort: 4997, protocol: UDP}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: ue, namespace: 5g, labels: {app: ue}}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: ue}}
+  template:
+    metadata: {labels: {app: ue}}
+    spec:
+      containers:
+        - name: srsue          # same container name as the srsRAN profile, so the traffic code is unchanged
+          image: testbed/ueransim:3.3.0
+          imagePullPolicy: Never
+          command: ["/bin/sh", "-c"]
+          args:
+            - GNB_IP=$(getent hosts gnb-rls.5g.svc.cluster.local | awk '{print $1}');
+              sed -e "s/__GNB_IP__/$GNB_IP/" /cfg/ue.yaml.tmpl > /tmp/ue.yaml;
+              exec nr-ue -c /tmp/ue.yaml -n ${N_UE:-10}
+          env: [{name: N_UE, value: "10"}]
+          securityContext: {privileged: true}
+          resources: {requests: {cpu: "1", memory: 512Mi}, limits: {cpu: "1", memory: 512Mi}}
+          volumeMounts: [{name: cfg, mountPath: /cfg}, {name: tun, mountPath: /dev/net/tun}]
+        - name: probe
+          image: testbed/probe:1.0
+          imagePullPolicy: Never
+          env: [{name: UE_NAME, value: ue1}, {name: TUN_DEV, value: uesimtun0}]
+          ports: [{name: metrics, containerPort: 9200}]
+          resources: {requests: {cpu: 250m, memory: 128Mi}, limits: {cpu: 250m, memory: 128Mi}}
+      volumes:
+        - {name: cfg, configMap: {name: ueransim-config}}
+        - {name: tun, hostPath: {path: /dev/net/tun, type: CharDevice}}

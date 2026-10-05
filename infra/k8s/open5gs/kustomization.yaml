@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - generated.yaml          # ConfigMap + 10 NF Deployments/Services (infra/open5gs/render.py)
+  - mongodb.yaml
+configMapGenerator:
+  - name: open5gs-provision
+    namespace: 5g
+    files:
+      - ../../open5gs/subscriber.json
+      - ../../open5gs/provision.js
+    options: {disableNameSuffixHash: true}

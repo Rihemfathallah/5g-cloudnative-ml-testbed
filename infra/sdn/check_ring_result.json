@@ -1,0 +1,55 @@
+{
+ "datapath": "user",
+ "netem_available": false,
+ "results": [
+  {
+   "check": "Mininet ring up, 4 switches connected to Ryu",
+   "ok": true,
+   "detail": "[{'name': 's1', 'connected': True}, {'name': 's2', 'connected': True}, {'name': 's3', 'connected': True}, {'name': 's4', 'connected': True}]"
+  },
+  {
+   "check": "controller tree up, RAN site reaches core site",
+   "ok": true,
+   "detail": "after 0.0 s"
+  },
+  {
+   "check": "tree excludes s3-s4 only",
+   "ok": true,
+   "detail": "{\"s1-s2\": 1.0, \"s2-s3\": 1.0, \"s3-s4\": 0.0, \"s4-s1\": 1.0}"
+  },
+  {
+   "check": "traffic follows s1-s2-s3",
+   "ok": true,
+   "detail": "{\"s1-s2\": 745242, \"s2-s3\": 745242, \"s3-s4\": 0, \"s4-s1\": 0}"
+  },
+  {
+   "check": "delay 20 ms on s2-s3 adds ~40 ms RTT",
+   "ok": null,
+   "detail": "skipped: no sch_netem"
+  },
+  {
+   "check": "link_down s1-s2: traffic restored via s4",
+   "ok": true,
+   "detail": "outage 0.01 s (controller reroute)"
+  },
+  {
+   "check": "rerouted path is s1-s4-s3",
+   "ok": true,
+   "detail": "{\"s1-s2\": 0, \"s2-s3\": 0, \"s3-s4\": 745200, \"s4-s1\": 745200}"
+  },
+  {
+   "check": "after link up, traffic back on s1-s2-s3",
+   "ok": true,
+   "detail": "{\"s1-s2\": 745242, \"s2-s3\": 745242, \"s3-s4\": 0, \"s4-s1\": 0}"
+  },
+  {
+   "measured": {
+    "initial_connectivity_s": 0.014276504516601562,
+    "link_up_outage_s": 0.0053174495697021484,
+    "link_down_outage_s": 0.012252330780029297,
+    "rtt_base_ms": 0.5335000000000001,
+    "rtt_delay20_ms": 0.5335000000000001
+   }
+  }
+ ]
+}

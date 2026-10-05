@@ -1,0 +1,16 @@
+# Open5GS NF metrics (:9090) and the UE probe (:9200), every 5 s.
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata: {name: open5gs, namespace: 5g}
+spec:
+  selector: {matchExpressions: [{key: app, operator: In, values: [amf, smf, upf, pcf]}]}
+  podMetricsEndpoints:
+    - {port: metrics, interval: 5s}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata: {name: ue-probe, namespace: 5g}
+spec:
+  selector: {matchLabels: {app: ue}}
+  podMetricsEndpoints:
+    - {port: metrics, interval: 5s}

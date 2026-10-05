@@ -1,0 +1,52 @@
+# srsRAN Project gNB, ZeroMQ virtual radio (pinned release: infra/VERSIONS.md).
+# Based on the upstream tutorial config "srsRAN gNB with srsUE" (gnb_zmq.yaml), adapted to:
+#   * PLMN 00101 / TAC 7 / SST 1, matching infra/open5gs/render.py
+#   * N2 (NGAP) on the cluster network, N3 (GTP-U) bound to the SDN-ring address
+#   * ZeroMQ to the UE pod by address instead of 127.0.0.1
+# __VARS__ are substituted by entrypoint.sh at container start.
+cu_cp:
+  amf:
+    addr: __AMF_IP__
+    port: 38412
+    bind_addr: __POD_IP__
+    supported_tracking_areas:
+      - tac: 7
+        plmn_list:
+          - plmn: "00101"
+            tai_slice_support_list:
+              - sst: 1
+cu_up:
+  upf:
+    bind_addr: __N3_IP__          # 10.100.3.10 on interface n3 (Multus, OVS bridge s1)
+
+ru_sdr:
+  device_driver: zmq
+  device_args: tx_port=tcp://*:2000,rx_port=tcp://__UE_IP__:2001,base_srate=23.04e6
+  srate: 23.04
+  tx_gain: 75
+  rx_gain: 75
+
+cell_cfg:
+  dl_arfcn: 368500
+  band: 3
+  channel_bandwidth_MHz: 20
+  common_scs: 15
+  plmn: "00101"
+  tac: 7
+  pdcch:
+    common:
+      ss0_index: 0
+      coreset0_index: 12
+    dedicated:
+      ss2_type: common
+      dci_format_0_1_and_1_1: false
+  prach:
+    prach_config_index: 1
+
+log:
+  filename: /tmp/gnb.log
+  all_level: warning
+
+pcap:
+  mac_enable: false
+  ngap_enable: false

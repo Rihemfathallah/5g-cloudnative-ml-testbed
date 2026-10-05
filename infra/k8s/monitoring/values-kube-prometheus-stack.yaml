@@ -1,0 +1,36 @@
+# kube-prometheus-stack, trimmed for one laptop. Version pinned in infra/VERSIONS.md.
+# Scrape every 5 s (the dataset's time step) -- including the kubelet/cAdvisor endpoint, whose
+# chart default is NOT the global interval.
+alertmanager: {enabled: false}
+grafana:
+  enabled: true
+  adminPassword: testbed          # local only; change if the machine is shared
+  service: {type: NodePort, nodePort: 30030}
+  sidecar: {dashboards: {enabled: true, label: grafana_dashboard}}
+prometheus:
+  service: {type: NodePort, nodePort: 30090}
+  prometheusSpec:
+    scrapeInterval: 5s
+    evaluationInterval: 5s
+    retention: 7d                 # export every run within this period (tb export)
+    resources: {requests: {cpu: 200m, memory: 600Mi}, limits: {memory: 1500Mi}}
+    podMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelectorNilUsesHelmValues: false
+    additionalScrapeConfigs:
+      - job_name: ryu
+        scrape_interval: 5s
+        static_configs: [{targets: ["__HOST_IP__:9300"]}]   # Ryu runs on the host (hostNetwork)
+kubelet:
+  serviceMonitor:
+    interval: 5s
+    cAdvisorInterval: 5s
+nodeExporter: {enabled: true}
+prometheus-node-exporter:
+  prometheus: {monitor: {interval: 5s}}
+kube-state-metrics:
+  prometheus: {monitor: {interval: 5s}}
+kubeEtcd: {enabled: false}
+kubeControllerManager: {enabled: false}
+kubeScheduler: {enabled: false}
+kubeProxy: {enabled: false}
+defaultRules: {create: false}

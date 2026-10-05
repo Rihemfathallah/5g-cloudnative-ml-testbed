@@ -1,0 +1,15 @@
+# UERANSIM gNB (fallback / many-UE profile). Matches infra/open5gs/render.py: PLMN 001/01, TAC 7, SST 1.
+mcc: '001'
+mnc: '01'
+nci: '0x000000010'
+idLength: 32
+tac: 7
+linkIp: __LINK_IP__
+ngapIp: __NGAP_IP__
+gtpIp: __GTP_IP__
+amfConfigs:
+  - address: __AMF_IP__
+    port: 38412
+slices:
+  - sst: 1
+ignoreStreamIds: true
