@@ -1,0 +1,8 @@
+\section{Anomaly detection (RQ1, RQ1b)}
+Models: z-score ($|z|>3$), Isolation Forest~\cite{liu2008iforest} (threshold: best validation F1), LSTM autoencoder
+(threshold: 99th percentile of validation scores on normal windows)~\cite{malhotra2016lstm}, Random Forest as a supervised
+upper reference. Metrics at event level (recall, delay from $t_\text{applied}$ to the end of the first
+alarm window), false alarms per hour of normal operation (alarms merged within \SI{30}{s}), and
+window-level F1. No point adjustment~\cite{kim2022pa}. BGP features follow~\cite{alrousan2012bgp}. 5 seeds, mean $\pm$ std.
+\tbd{Fig. detection\_summary, detection\_by\_type, detection\_delay, attribution; ablation without
+link-state columns; RAN transfer; BGP table}.

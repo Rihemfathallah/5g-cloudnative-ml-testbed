@@ -1,0 +1,17 @@
+\section{Fault model and dataset}
+Table~\ref{tab:faults}: fault types, injection point (one per type), mild/strong parameters.
+Ground truth uses the times at which an impairment was \emph{confirmed} active and removed; the effect
+window adds a \SI{60}{s} recovery grace. Windows (\SI{60}{s}, stride \SI{5}{s}) are anomalous if
+$\geq 50\%$ of their samples fall in an effect window, normal if none, ambiguous otherwise (excluded
+from window metrics). Splits are by time per run (60/20/20) with a \SI{60}{s} purge at boundaries.
+\tbd{runs, hours, faults per type and severity, failed injections}.
+\begin{table}[t]\centering\caption{Fault catalogue}\label{tab:faults}
+\begin{tabular}{llll}\toprule Type & Injector & Mild & Strong\\\midrule
+delay & Mininet link & \SI{10}{ms} & \SI{50}{ms}\\
+loss & Mininet link & 1\,\% & 5\,\%\\
+link down & Mininet link & -- & --\\
+CPU & Chaos Mesh (UPF) & 1 worker, 50\,\% & 2 workers, 100\,\%\\
+memory & Chaos Mesh (UPF) & 256\,MB & 768\,MB\\
+pod kill & Chaos Mesh (AMF/SMF) & -- & --\\
+flood & UE iperf3 & 4$\times$, 30\,Mb/s & 8$\times$, 80\,Mb/s\\\bottomrule
+\end{tabular}\end{table}

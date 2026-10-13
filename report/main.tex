@@ -1,0 +1,32 @@
+% IEEE conference-format report. Build: latexmk -pdf main.tex
+% Every number in this document must come from results/*.csv (cite the run id in a footnote).
+\documentclass[conference]{IEEEtran}
+\usepackage{graphicx,booktabs,amsmath,siunitx,hyperref,xcolor}
+\newcommand{\tbd}[1]{\textcolor{red}{[TBD: #1]}}
+\graphicspath{{figures/}}
+
+\begin{document}
+\title{A Cloud-Native 5G Testbed with an SDN Transport for Anomaly Detection and Handover Prediction}
+\author{\IEEEauthorblockN{Rihem Fathallah}\IEEEauthorblockA{ENET'Com, University of Sfax, Tunisia\\rihem.fathallahengineer@gmail.com}}
+\maketitle
+
+\begin{abstract}
+We build an emulated 5G standalone network (Open5GS core, srsRAN gNB and UE over a ZeroMQ virtual
+radio) in a single-node Kubernetes cluster, whose N3 user plane crosses a software-defined transport
+ring. Faults injected into the transport and into the network functions yield a labelled dataset of
+\tbd{N} hours with \tbd{N} faults. We compare a z-score baseline, Isolation Forest and an LSTM
+autoencoder at event level (recall, detection delay, false alarms per hour) and apply them to public
+BGP data. Separately, an LSTM handover predictor is compared with a 3GPP A3 rule tuned per speed on
+TR~38.901 signal traces. \tbd{headline results}.
+\end{abstract}
+
+\input{sections/introduction}
+\input{sections/testbed}
+\input{sections/dataset}
+\input{sections/detection}
+\input{sections/handover}
+\input{sections/limitations}
+
+\bibliographystyle{IEEEtran}
+\bibliography{refs}
+\end{document}

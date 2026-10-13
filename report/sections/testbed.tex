@@ -1,0 +1,14 @@
+\section{Testbed}
+\subsection{Architecture}
+\tbd{architecture figure}. Open5GS v2.7.7 (10 network functions of the 5G service-based architecture~\cite{ts23501}), srsRAN Project gNB and srsUE over
+ZeroMQ, single-node k3s with the static CPU manager: the gNB, UE and UPF containers get exclusive
+cores so that CPU faults cannot spill onto the real-time radio emulation or the measurement path.
+\subsection{SDN transport}
+N3 crosses a four-switch Open vSwitch ring (Mininet) controlled by Ryu. The controller computes a
+breadth-first forwarding tree rooted at the RAN-site switch and recomputes it on every port-status
+change; N3 normally follows s1--s2--s3 and is rerouted over s4 when a link on that path fails
+(measured reroute: \tbd{host value}~s). A spanning-tree design was rejected: Ryu's stplib did not
+reconverge after a failure on the active path.
+\subsection{Monitoring}
+Prometheus scrapes, every \SI{5}{s}: Open5GS NF metrics, kubelet/cAdvisor, node-exporter, the
+controller's port and tree metrics, and a UE-side probe (RTT, loss, tunnel throughput, registration).

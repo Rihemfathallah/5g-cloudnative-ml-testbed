@@ -1,0 +1,14 @@
+\section{Handover prediction (RQ2)}
+\subsection{Simulation model}
+Seven omnidirectional cells (ISD \SI{500}{m}), TR~38.901~\cite{tr38901} UMa path loss (verified identical to ns-3's
+implementation), spatially correlated shadowing, a smooth LOS field with soft transitions, UEs at
+3/30/60/120\,km/h, \SI{40}{ms} RSRP samples with \SI{1}{dB} measurement error, TS~38.331~\cite{ts38331} L3 filter
+($k=4$, coefficient rescaled to keep the \SI{200}{ms} time constant). Full-load SINR; RLF via
+$Q_\text{out}=-8$\,dB, $Q_\text{in}=-6$\,dB, T310 = \SI{1}{s}; ping-pong = return within \SI{1}{s}.
+\subsection{Policies and fairness}
+A3 is tuned per speed over hysteresis 0--10\,dB and TTT \{40,160,320,640\}\,ms; the LSTM's threshold
+and minimum time-of-stay are tuned per speed with the same objective
+$J = \text{RLF/min} + 0.5\,\text{PP/min} + 0.05\,\text{HO/min}$ on the same validation trajectories.
+Label: a neighbour exceeds the serving cell by $\geq 3$\,dB for $\geq 200$\,ms starting within
+\SI{500}{ms} (noise-free large-scale RSRP). Training states come from A3 rollouts plus one DAgger round.
+\tbd{Fig. handover\_rates, a3\_grid; paired bootstrap CIs (LSTM $-$ A3) per speed}.
