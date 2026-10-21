@@ -71,6 +71,7 @@ lstm:
   batch_size: 512
   lr: 2.0e-3
   patience: 5
+  state_stride: 10           # every 10th visited state (400 ms apart) -> ~190k training states
   dagger_iters: 1            # extra rollouts under the learned policy, relabelled and added
   tau_grid: [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
   min_stay_ms: [0, 200, 500, 1000]

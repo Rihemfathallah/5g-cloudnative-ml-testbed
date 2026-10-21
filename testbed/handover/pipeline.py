@@ -143,6 +143,7 @@ def train_net(cfg, x, y, slot, xv, yv, slotv, seed: int):
         with torch.no_grad():
             vl = float(loss_of(Xv, Yv, Sv))
         hist.append({"epoch": ep, "train_loss": tot / len(X), "val_loss": vl})
+        log.info("seed %d epoch %d  train %.4f  val %.4f", seed, ep, tot / len(X), vl)
         if vl < best - 1e-5:
             best, bad, state = vl, 0, {k: v.clone() for k, v in net.state_dict().items()}
         else:
@@ -249,7 +250,7 @@ def main(stage: str, cfg: dict, out: Path, fast: bool = False) -> None:
         return
 
     lc = cfg["lstm"]
-    stride = 5
+    stride = int(lc.get("state_stride", 5))   # keep every n-th visited state (consecutive ones are near-duplicates)
     test_rows, lstm_grid_rows, clf_rows, boot_rows, chosen = [], [], [], [], {"a3": a3_best, "lstm": {}}
 
     def a3_fn(sp):
