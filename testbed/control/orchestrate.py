@@ -95,9 +95,10 @@ def _execute_real(cfg, plans, labels, d: Path, run_id, warmup_s, duration_s, gra
     if not report(run_preflight(cfg, kube, prom, mn)) and not force:
         raise SystemExit("preflight failed; fix the testbed or pass --force (the run will be marked)")
 
+    tun = rc.get("ue_tun", "tun_srsue")          # uesimtun0 for UERANSIM, oaitun_ue1 for OAI
     injectors = {"mininet": MininetInjector(clock, mn),
                  "chaos-mesh": ChaosMeshInjector(clock, kube),
-                 "traffic": TrafficFloodInjector(clock, kube)}
+                 "traffic": TrafficFloodInjector(clock, kube, dev=tun)}
     stop = threading.Event()
 
     def _handler(signum, frame):
@@ -109,7 +110,7 @@ def _execute_real(cfg, plans, labels, d: Path, run_id, warmup_s, duration_s, gra
     coll_start = t0 + int(warmup_s * 1000)
     end = coll_start + int(duration_s * 1000)
     traffic = TrafficRunner(iter_traffic(cfg["traffic"], derive_seed(int(rc["seed"]), "traffic")),
-                            K8sTraffic(kube, clock).actions(), clock, d / "context.jsonl", end, stop)
+                            K8sTraffic(kube, clock, dev=tun).actions(), clock, d / "context.jsonl", end, stop)
     faults = FaultRunner(plans, injectors, clock, labels, run_id, grace_s, end, stop)
     tt = threading.Thread(target=traffic.run, name="traffic", daemon=True)
     try:

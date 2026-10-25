@@ -74,11 +74,11 @@ def run_preflight(cfg: dict, kube: Kube, prom: Prom, mn: MininetRPC) -> list[Che
         out.append(Check("prometheus reachable", False, str(e)))
 
     if pf.get("check_n3_on_sdn", True):
-        out.append(check_n3_on_sdn(kube, prom))
+        out.append(check_n3_on_sdn(kube, prom, dev=cfg["run"].get("ue_tun", "tun_srsue")))
     return out
 
 
-def check_n3_on_sdn(kube: Kube, prom: Prom, seconds: int = 15) -> Check:
+def check_n3_on_sdn(kube: Kube, prom: Prom, seconds: int = 15, dev: str = "tun_srsue") -> Check:
     """Push a known amount of traffic through the tunnel and require that the ring carried it.
 
     Compares bytes on the gNB's n3 interface with bytes summed over the ring links: if GTP-U
@@ -86,7 +86,7 @@ def check_n3_on_sdn(kube: Kube, prom: Prom, seconds: int = 15) -> Check:
     """
     q_n3 = 'sum(increase(container_network_transmit_bytes_total{namespace="5g",pod=~"gnb-.*",interface="n3"}[1m]))'
     before = prom.instant(q_n3) or 0.0
-    kube.exec("app=ue", "probe", ["iperf3", "-c", "10.45.0.1", "--bind-dev", "tun_srsue",
+    kube.exec("app=ue", "probe", ["iperf3", "-c", "10.45.0.1", "--bind-dev", dev,
                                   "-p", "5201", "-b", "5M", "-t", str(seconds)],
               timeout=seconds + 30, check=False)
     time.sleep(10)  # two scrapes

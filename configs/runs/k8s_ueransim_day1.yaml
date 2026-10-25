@@ -1,0 +1,80 @@
+# One-day campaign on a VM (profile k8s-ueransim). Reproduce with:
+#   tb run configs/runs/k8s_ueransim_day1.yaml
+run:
+  name: k8s_ueransim_day1
+  profile: k8s-ueransim        # VM: lighter than srsRAN, same core, same SDN path
+  source: 5g-ueransim
+  duration: 4h                 # one-day campaign; add more runs later (seed 2, 3, ...)
+  warmup: 10m                  # discarded from the dataset
+  seed: 1
+  namespace: 5g
+  ue_entity: ue1
+  ue_tun: uesimtun0            # UERANSIM tunnel of the first UE
+
+traffic:
+  # Probabilities of the next traffic episode; durations are drawn uniformly from the ranges.
+  mix: {iperf_burst: 0.35, ping_only: 0.4, idle: 0.25}   # no reattach: the srsUE restart hook does not exist in UERANSIM
+  iperf_burst: {duration: [20s, 120s], mbps: [2, 20], parallel: [1, 2]}
+  ping_only:   {duration: [30s, 180s]}
+  idle:        {duration: [30s, 240s]}
+  reattach:    {down: [5s, 20s]}
+
+faults:
+  min_gap: 15m                 # normal operation between the END of one effect window and the next fault
+  first_after: 10m             # no fault in the first 10 min after warm-up (needed for the training split)
+  grace: 60s                   # recovery tail added to every effect window
+  catalog:
+    - type: delay
+      injector: mininet
+      targets: ["link:s1-s2", "link:s2-s3"]   # on the active STP path (see infra/sdn/README.md)
+      mild:   {delay_ms: 10, jitter_ms: 2}
+      strong: {delay_ms: 50, jitter_ms: 10}
+      duration: [2m, 10m]
+    - type: loss
+      injector: mininet
+      targets: ["link:s1-s2", "link:s2-s3"]   # on the active STP path (see infra/sdn/README.md)
+      mild:   {loss_pct: 1}
+      strong: {loss_pct: 5}
+      duration: [2m, 10m]
+    - type: link_down
+      injector: mininet
+      targets: ["link:s1-s2", "link:s2-s3"]   # on the active STP path (see infra/sdn/README.md)
+      mild:   {}
+      strong: {}
+      duration: [1m, 3m]
+    - type: cpu
+      injector: chaos-mesh
+      targets: ["pod:upf"]
+      mild:   {workers: 1, load: 50}
+      strong: {workers: 2, load: 100}
+      duration: [3m, 5m]
+    - type: mem
+      injector: chaos-mesh
+      targets: ["pod:upf"]
+      mild:   {size: 256MB}
+      strong: {size: 768MB}
+      duration: [3m, 5m]
+    - type: pod_kill
+      injector: chaos-mesh
+      targets: ["pod:amf", "pod:smf"]
+      mild:   {}
+      strong: {}
+      duration: [1m, 3m]       # time the injector waits after the pod is Ready again before the next step
+    - type: flood
+      injector: traffic
+      targets: ["pod:ue"]
+      mild:   {parallel: 4, mbps: 30}
+      strong: {parallel: 8, mbps: 80}
+      duration: [2m, 5m]
+
+monitoring:
+  prometheus_url: http://localhost:30090
+  scrape_interval: 5s
+  metric_map: configs/metric_map.yaml
+  export_chunk: 6h
+
+preflight:
+  require_registered: true
+  ping_target: 10.45.0.1
+  max_rtt_ms: 50
+  check_n3_on_sdn: true        # fails the run if GTP-U does not cross the OVS ring
