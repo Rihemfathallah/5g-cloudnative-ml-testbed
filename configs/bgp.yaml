@@ -1,5 +1,9 @@
 # RQ1b: the same detectors on public BGP update data.
 #
+# Durations (Slammer 16 h, Nimda 59 h, Code Red I 10 h), collector rrc04, AS 513 and the
+# 5-day / 6-day windows follow the Trajkovic lab (HPSR 2012 slides; IEEE DataPort "BGP routing
+# records from RIPE and BCNET"). The slides give durations, not start times: take the exact start
+# times from the labels of the IEEE DataPort dataset, then set verified: true.
 # Event intervals below are the commonly used onset dates. The exact anomalous intervals
 # differ between papers: before reporting any number, copy the intervals used by the paper
 # you compare against (e.g. Al-Rousan & Trajkovic, HPSR 2012) into `anomalous` and set
@@ -8,20 +12,20 @@
 collectors:
   ripe_ris: ["rrc04"]      # RIPE RIS collector names
   routeviews: []           # e.g. ["route-views2"]
-peer_filter: null          # optional peer AS to keep, to avoid mixing peers with different views
+peer_filter: "513"         # AS 513 at rrc04, as in the Trajkovic lab datasets (IEEE DataPort, RIPE/BCNET records)
 
 events:
   - name: slammer
     days: ["2003-01-23", "2003-01-24", "2003-01-25", "2003-01-26", "2003-01-27"]
-    anomalous: [["2003-01-25T05:30:00Z", "2003-01-25T21:30:00Z"]]
+    anomalous: [["2003-01-25T05:30:00Z", "2003-01-25T21:30:00Z"]]   # 16 h (HPSR 2012 slides)
     verified: false
   - name: nimda
-    days: ["2001-09-15", "2001-09-16", "2001-09-17", "2001-09-18", "2001-09-19", "2001-09-20"]
-    anomalous: [["2001-09-18T13:00:00Z", "2001-09-20T00:00:00Z"]]
+    days: ["2001-09-16", "2001-09-17", "2001-09-18", "2001-09-19", "2001-09-20", "2001-09-21"]
+    anomalous: [["2001-09-18T13:00:00Z", "2001-09-21T00:00:00Z"]]   # 59 h (HPSR 2012 slides)
     verified: false
   - name: code_red_i
     days: ["2001-07-17", "2001-07-18", "2001-07-19", "2001-07-20", "2001-07-21"]
-    anomalous: [["2001-07-19T13:20:00Z", "2001-07-20T00:00:00Z"]]
+    anomalous: [["2001-07-19T14:00:00Z", "2001-07-20T00:00:00Z"]]   # 10 h (HPSR 2012 slides)
     verified: false
 
 # Train on one event, test on the others (leave-one-event-out) AND within-event time split.
